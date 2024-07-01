@@ -1,0 +1,22 @@
+--bai 1 
+select Name from city where CountryCode = 'USA' and population > 120000;
+--bai 2 
+  select * from city
+where countrycode ='JPN';
+--bai 3 
+  SELECT CITY, STATE FROM STATION;
+-- bai 4 
+  SELECT DISTINCT CITY FROM STATION WHERE CITY LIKE 'A%' OR CITY LIKE 'E%'
+OR CITY LIKE 'O%' OR CITY LIKE 'U%'
+OR CITY LIKE 'A%'
+OR CITY LIKE 'I%';
+-- bai 6
+ Select distinct city from station Where city not like 'A%' and city not like 'E%' and city not like 'I%' and city not like 'O%' and city not like 'U%';
+-- bai 7 
+  select name from employee 
+order by name;
+-- bai 8
+  */select name from employee
+where (salary>2000 and months <10) 
+order by employee_id
+  
