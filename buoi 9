@@ -6,7 +6,7 @@ FROM
     viewership;
 
 -- bai 2 
-SELECT 
+SELECT A, B, C,
     CASE 
         WHEN A + B > C AND A + C > B AND B + C > A THEN 'Yes'
         ELSE 'No'
@@ -29,7 +29,7 @@ FROM uncategorised_callers;
 
 -- bai 4 
 select name from customer
-WHERE referee_id IS NULL OR referee_id = 1;
+WHERE coalesce (referee_id,0)<>2;
 
 -- bai 5 
 SELECT
