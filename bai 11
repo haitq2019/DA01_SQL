@@ -1,0 +1,81 @@
+-- bai 1 
+SELECT 
+    COUNTRY.Continent, 
+    FLOOR(AVG(CITY.Population)) AS AveragePopulation
+FROM 
+    CITY
+INNER JOIN 
+    COUNTRY 
+ON 
+    CITY.CountryCode = COUNTRY.Code
+GROUP BY  
+    COUNTRY.Continent;
+
+-- bai 2 (cau nay em ko biet sai o dau)
+SELECT 
+    ROUND(
+        CAST(SUM(CASE WHEN t.signup_action = 'Confirmed' THEN 1 ELSE 0 END) AS DECIMAL) / 
+        COUNT(DISTINCT s.user_id)) AS confirm_rate
+FROM 
+    emails AS s
+LEFT JOIN 
+    texts AS t 
+ON 
+    s.email_id=t.email_id;
+
+-- bai 3 
+WITH time_spent AS (SELECT 
+b.age_bucket,
+sum(CASE when a.activity_type='send' then a.time_spent else 0 END) AS send_time ,
+SUM(CASE WHEN a.activity_type='open' THEN a.time_spent ELSE 0 END) AS open_time
+FROM 
+activities as a
+LEFT JOIN 
+age_breakdown as b  
+ON a.user_id=b.user_id
+WHERE
+a.activity_type IN ('send','open')
+GROUP BY b.age_bucket)
+
+SELECT 
+    age_bucket,
+    ROUND(send_time * 100.0 / (send_time + open_time), 2) AS send_perc,
+    ROUND(open_time * 100.0 / (send_time + open_time), 2) AS open_perc
+FROM 
+    time_spent;
+
+-- bai 4
+
+    SELECT 
+        s.customer_id, 
+        COUNT(DISTINCT p.product_category) AS category_count
+    FROM 
+        customer_contracts as s
+    JOIN 
+        products AS p ON s.product_id = p.product_id
+    GROUP BY 
+        s.customer_id
+HAVING COUNT(DISTINCT p.product_category)=3;
+
+-- bai 5 
+select e1.employee_id, e1.name, count(e2.employee_id) as reports_count,
+     round(avg(e2.age)) as average_age
+     from employees e1 join employees e2 on e1.employee_id = e2.reports_to
+group by e1.employee_id, e1.name
+order by e1.employee_id;
+
+ --bai 6
+select a.product_name, sum(b.unit) as unit 
+from Products as a
+join Orders as b on  a.product_id=b.product_id
+WHERE b.order_date >= '2020-02-01' 
+  AND b.order_date <= '2020-02-29'
+  GROUP BY b.product_id 
+having unit >=100;
+
+-- bai 7
+SELECT p.page_id
+FROM pages as p
+LEFT JOIN page_likes AS l ON p.page_id = l.page_id
+WHERE l.page_id IS NULL
+ORDER BY p.page_id;
