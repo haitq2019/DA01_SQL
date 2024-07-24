@@ -1,0 +1,134 @@
+-- bai 1
+WITH duplicate_jobs AS (
+    SELECT company_id, title, description, COUNT(*) as job_count
+    FROM job_listings
+    GROUP BY company_id, title, description
+    HAVING COUNT(*) > 1
+)
+SELECT COUNT(DISTINCT company_id) AS duplicate_companies
+FROM duplicate_jobs;
+
+-- bai 2
+WITH ranked_spending_cte AS (
+  SELECT 
+    category, 
+    product, 
+    SUM(spend) AS total_spend,
+    RANK() OVER (
+      PARTITION BY category 
+      ORDER BY SUM(spend) DESC) AS ranking 
+  FROM product_spend
+  WHERE EXTRACT(YEAR FROM transaction_date) = 2022
+  GROUP BY category, product
+)
+
+SELECT 
+  category, 
+  product, 
+  total_spend 
+FROM ranked_spending_cte 
+WHERE ranking <= 2 
+ORDER BY category, ranking;
+
+-- bai 3
+WITH call_records AS (
+  SELECT
+    policy_holder_id,
+    COUNT(case_id) AS call_count
+  FROM callers
+  GROUP BY policy_holder_id
+  HAVING COUNT(case_id) >= 3
+)
+
+SELECT COUNT(policy_holder_id) AS policy_holder_count
+FROM call_records;
+
+-- bai 4 
+SELECT pages.page_id
+FROM pages
+LEFT OUTER JOIN page_likes AS likes
+  ON pages.page_id = likes.page_id
+WHERE likes.page_id IS NULL;
+
+-- bai 5 
+WITH june_active_users AS (
+    SELECT DISTINCT user_id
+    FROM user_actions
+    WHERE event_date BETWEEN '2022-06-01' AND '2022-06-30'
+),
+july_active_users AS (
+    SELECT DISTINCT user_id
+    FROM user_actions
+    WHERE event_date BETWEEN '2022-07-01' AND '2022-07-31'
+)
+SELECT 7 AS month, COUNT(*) AS monthly_active_users
+FROM july_active_users
+WHERE user_id IN (SELECT user_id FROM june_active_users);
+
+-- bai 6 
+SELECT  SUBSTR(trans_date,1,7) as month, country, count(id) as trans_count, SUM(CASE WHEN state = 'approved' then 1 else 0 END) as approved_count, SUM(amount) as trans_total_amount, SUM(CASE WHEN state = 'approved' then amount else 0 END) as approved_total_amount
+FROM Transactions
+GROUP BY month, country;
+
+-- bai 7
+WITH CTE AS (
+    SELECT product_id, MIN(year) AS minyear FROM Sales 
+    GROUP BY product_id 
+)
+
+SELECT s.product_id, s.year AS first_year, s.quantity, s.price 
+FROM Sales s
+INNER JOIN CTE ON cte.product_id = s.product_id  AND s.year = cte.minyear; 
+
+-- bai 8 
+SELECT customer_id
+FROM Customer
+GROUP BY customer_id
+HAVING COUNT(DISTINCT product_key) = (SELECT COUNT(*) FROM Product);
+
+-- bai 9 
+SELECT employee_id
+FROM Employees
+WHERE salary < 30000
+AND manager_id IS NOT NULL
+AND manager_id NOT IN (SELECT employee_id FROM Employees)
+ORDER BY employee_id;
+
+-- bai 10
+WITH duplicate_jobs AS (
+    SELECT company_id, title, description, COUNT(*) as job_count
+    FROM job_listings
+    GROUP BY company_id, title, description
+    HAVING COUNT(*) > 1
+)
+SELECT COUNT(DISTINCT company_id) AS duplicate_companies
+FROM duplicate_jobs;
+
+-- bai 11 
+(SELECT name AS results
+FROM MovieRating JOIN Users USING(user_id)
+GROUP BY name
+ORDER BY COUNT(*) DESC, name
+LIMIT 1)
+
+UNION ALL
+
+(SELECT title AS results
+FROM MovieRating JOIN Movies USING(movie_id)
+WHERE EXTRACT(YEAR_MONTH FROM created_at) = 202002
+GROUP BY title
+ORDER BY AVG(rating) DESC, title
+LIMIT 1);
+
+-- bai 12 
+WITH base AS (
+    SELECT requester_id AS id FROM RequestAccepted
+    UNION ALL
+    SELECT accepter_id AS id FROM RequestAccepted
+)
+SELECT id, COUNT(*) AS num
+FROM base
+GROUP BY id
+ORDER BY num DESC
+LIMIT 1;
+
