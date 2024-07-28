@@ -1,0 +1,208 @@
+-- bai 1 
+WITH YearlySpend AS (
+    SELECT 
+        product_id,
+        EXTRACT(YEAR FROM transaction_date) AS year,
+        SUM(spend) AS curr_year_spend
+    FROM user_transactions
+    GROUP BY product_id, year
+),
+SpendWithLag AS (
+    SELECT 
+        product_id,
+        year,
+        curr_year_spend,
+        LAG(curr_year_spend) OVER (PARTITION BY product_id ORDER BY year) AS prev_year_spend
+    FROM YearlySpend
+)
+SELECT 
+    year,
+    product_id,
+    curr_year_spend,
+    prev_year_spend,
+    ROUND((curr_year_spend - prev_year_spend) / prev_year_spend * 100, 2) AS yoy_rate
+FROM SpendWithLag
+ORDER BY product_id, year;
+
+-- bai 2 
+WITH LaunchDates AS (
+    SELECT 
+        card_name,
+        issue_year,
+        issue_month,
+        issued_amount,
+        RANK() OVER (PARTITION BY card_name ORDER BY issue_year, issue_month) AS rank
+    FROM 
+        monthly_cards_issued
+)
+SELECT 
+    card_name,
+    issued_amount
+FROM 
+    LaunchDates
+WHERE 
+    rank = 1
+ORDER BY 
+    issued_amount DESC;
+ 
+-- bai 3 
+WITH RankedTransactions AS (
+    SELECT 
+        user_id, 
+        spend, 
+        transaction_date,
+        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY transaction_date) AS rank
+    FROM 
+        transactions
+)
+SELECT 
+    user_id, 
+    spend, 
+    transaction_date
+FROM 
+    RankedTransactions
+WHERE 
+    rank = 3;
+
+-- bai 4 
+WITH a AS (
+    SELECT 
+        user_id, 
+        COUNT(product_id) AS purchase_count, 
+        transaction_date,
+        ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY transaction_date DESC) AS rank
+    FROM 
+        user_transactions
+    GROUP BY 
+        user_id, 
+        transaction_date
+)
+SELECT 
+    user_id, 
+    purchase_count, 
+    transaction_date 
+FROM 
+    a  
+WHERE 
+    rank = 1
+ORDER BY 
+    transaction_date;
+
+-- bai 5
+WITH RollingAverage AS (
+    SELECT 
+        user_id,
+        tweet_date,
+        tweet_count,
+        ROUND(AVG(tweet_count) OVER (PARTITION BY user_id ORDER BY tweet_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 2) AS rolling_avg_3d
+    FROM 
+        tweets
+)
+SELECT 
+    user_id,
+    tweet_date,
+    rolling_avg_3d
+FROM 
+    RollingAverage;
+
+-- bai 6 
+WITH PreviousTransactions AS (
+    SELECT 
+        transaction_id,
+        merchant_id,
+        credit_card_id,
+        amount,
+        transaction_timestamp,
+        LAG(transaction_timestamp) OVER (
+            PARTITION BY merchant_id, credit_card_id, amount 
+            ORDER BY transaction_timestamp
+        ) AS prev_transaction_timestamp
+    FROM 
+        transactions
+),
+FilteredTransactions AS (
+    SELECT 
+        transaction_id,
+        merchant_id,
+        credit_card_id,
+        amount,
+        transaction_timestamp,
+        prev_transaction_timestamp,
+        EXTRACT(EPOCH FROM (transaction_timestamp - prev_transaction_timestamp)) / 60 AS minute_diff
+    FROM 
+        PreviousTransactions
+)
+SELECT 
+    COUNT(*) AS payment_count
+FROM 
+    FilteredTransactions
+WHERE 
+    minute_diff <= 10
+    AND minute_diff IS NOT NULL;
+
+-- bai 7
+WITH TotalSpend AS (
+    SELECT 
+        category,
+        product,
+        SUM(spend) AS total_spend
+    FROM 
+        product_spend
+    WHERE 
+        EXTRACT(YEAR FROM transaction_date) = 2022
+    GROUP BY 
+        category, product
+),
+RankedProducts AS (
+    SELECT 
+        category,
+        product,
+        total_spend,
+        RANK() OVER (PARTITION BY category ORDER BY total_spend DESC) AS rank
+    FROM 
+        TotalSpend
+)
+SELECT 
+    category,
+    product,
+    total_spend
+FROM 
+    RankedProducts
+WHERE 
+    rank <= 2
+ORDER BY 
+    category, rank;
+
+bai 8 
+WITH TopSongs AS (
+    SELECT
+        s.artist_id,
+        COUNT(c.song_id) AS song_count
+    FROM
+        chart c
+    JOIN
+        songs s ON c.song_id = s.song_id
+    WHERE
+        c.rank <= 10
+    GROUP BY
+        s.artist_id
+),
+RankedArtists AS (
+    SELECT
+        a.artist_name,
+        ts.song_count,
+        DENSE_RANK() OVER (ORDER BY ts.song_count DESC) AS artist_rank
+    FROM
+        TopSongs ts
+    JOIN
+        artists a ON ts.artist_id = a.artist_id
+)
+SELECT
+    artist_name,
+    artist_rank
+FROM
+    RankedArtists
+WHERE
+    artist_rank <= 5
+ORDER BY
+    artist_rank, artist_name;
